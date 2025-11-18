@@ -1,28 +1,48 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 
-// ✅ Handler notifikasi global (versi terbaru, kompatibel Expo SDK 51+)
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true, // tampilkan alert popup
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true, // ✅ tambahan untuk SDK baru
-    shouldShowList: true,   // ✅ tambahan untuk SDK baru
-  }),
-});
+let Notifications: any;
 
-// ✅ Registrasi Push Notification Token (Expo Push Token)
-export async function registerForPushNotificationsAsync() {
+try {
+  // Aman untuk dev build / release
+  Notifications = require("expo-notifications");
+
+  // 🔹 Cegah error jika handler tidak tersedia (misal di Expo Go)
+  if (Notifications.setNotificationHandler) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+} catch (error) {
+  // Mock supaya tidak error di Expo Go
+  console.warn("⚠️ expo-notifications tidak aktif di Expo Go:", error);
+  Notifications = {
+    getPermissionsAsync: async () => ({ status: "undetermined" }),
+    requestPermissionsAsync: async () => ({ status: "granted" }),
+    getExpoPushTokenAsync: async () => ({ data: "ExpoGoMockToken" }),
+    setNotificationChannelAsync: async () => {},
+    addNotificationReceivedListener: () => ({ remove: () => {} }),
+    addNotificationResponseReceivedListener: () => ({ remove: () => {} }),
+  };
+}
+
+/**
+ * Register perangkat untuk menerima notifikasi
+ */
+export async function registerForPushNotificationsAsync(): Promise<string | null> {
   try {
     if (!Device.isDevice) {
-      console.warn("❌ Push notification hanya berfungsi di device fisik.");
-      return undefined;
+      Alert.alert("Notifikasi hanya berfungsi di perangkat fisik.");
+      return null;
     }
 
-    // Ambil izin notifikasi
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -32,83 +52,57 @@ export async function registerForPushNotificationsAsync() {
     }
 
     if (finalStatus !== "granted") {
-      console.warn("⚠️ Izin notifikasi ditolak oleh pengguna.");
-      return undefined;
+      Alert.alert("Izin notifikasi tidak diberikan!");
+      return null;
     }
 
-    // ✅ Ambil projectId dari Expo Config
     const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId ??
+      "5f4848f3-6bce-4af5-b269-f0021407c68b"; // fallback ID kamu
 
     if (!projectId) {
-      console.error("❌ Project ID tidak ditemukan di app.json. Pastikan sudah diset.");
-      return undefined;
+      console.error("❌ Project ID tidak ditemukan di app.json → extra.eas.projectId");
+      return null;
     }
 
-    // ✅ Ambil Expo Push Token
-    const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
-    const token = tokenResponse.data;
-
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
     console.log("✅ Expo Push Token:", token);
 
-    // ✅ Konfigurasi channel notifikasi Android
-    if (Platform.OS === "android") {
+    if (Platform.OS === "android" && Notifications.setNotificationChannelAsync) {
       await Notifications.setNotificationChannelAsync("default", {
         name: "default",
-        importance: Notifications.AndroidImportance.MAX,
+        importance: Notifications.AndroidImportance?.MAX ?? 4,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#1E3A8A", // warna navy
+        lightColor: "#0B3B82",
       });
     }
 
     return token;
-  } catch (err) {
-    console.error("❌ Gagal mendapatkan Push Token:", err);
-    return undefined;
+  } catch (error) {
+    console.error("❌ Error register push:", error);
+    return null;
   }
 }
 
-// ✅ Listener untuk event notifikasi (foreground & response)
-export function subscribeToNotifications({
-  onNotificationReceived,
-  onNotificationResponse,
-}: {
-  onNotificationReceived?: (notification: Notifications.Notification) => void;
-  onNotificationResponse?: (response: Notifications.NotificationResponse) => void;
-}) {
-  const listeners: (() => void)[] = [];
+/**
+ * Listener untuk menangani event notifikasi
+ */
+export function setupNotificationListeners() {
+  const receivedListener = Notifications.addNotificationReceivedListener(
+    (notification: any) => {
+      console.log("📩 Notifikasi diterima:", notification);
+    }
+  );
 
-  if (onNotificationReceived) {
-    const receivedSub = Notifications.addNotificationReceivedListener(onNotificationReceived);
-    listeners.push(() => receivedSub.remove());
-  }
+  const responseListener = Notifications.addNotificationResponseReceivedListener(
+    (response: any) => {
+      console.log("👉 User menekan notifikasi:", response);
+    }
+  );
 
-  if (onNotificationResponse) {
-    const responseSub = Notifications.addNotificationResponseReceivedListener(onNotificationResponse);
-    listeners.push(() => responseSub.remove());
-  }
-
-  return () => listeners.forEach((u) => u());
-}
-
-// ✅ Fungsi testing notifikasi lokal
-export async function scheduleLocalNotification({
-  title,
-  body,
-  seconds = 2,
-}: {
-  title: string;
-  body: string;
-  seconds?: number;
-}) {
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: { title, body },
-      trigger: { seconds, repeats: false } as any, // gunakan "as any" untuk kompatibilitas SDK
-    });
-    console.log(`✅ Notifikasi lokal dijadwalkan dalam ${seconds} detik`);
-  } catch (err) {
-    console.error("❌ Gagal menjadwalkan notifikasi lokal:", err);
-  }
+  return () => {
+    receivedListener.remove?.();
+    responseListener.remove?.();
+  };
 }

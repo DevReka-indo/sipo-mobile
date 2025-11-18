@@ -1,0 +1,298 @@
+import Notification from "@/components/Notification";
+import { Colors } from "@/constants/colors";
+import { Fonts } from "@/constants/fonts";
+import { apiFetch } from "@/utils/api";
+import { formatTanggalID } from "@/utils/date";
+import { FontAwesome6 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+interface NotificationItem {
+  notif_id?: string;
+  id: string;
+  title: string;
+  subtitle: string;
+  time: string;
+  type: string;
+}
+
+export default function NotifikasiScreen() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false); // ⬅️ untuk pull-to-refresh
+  const [unread, setUnread] = useState<NotificationItem[]>([]);
+  const [read, setRead] = useState<NotificationItem[]>([]);
+
+  const fetchNotifData = useCallback(async (): Promise<void> => {
+    try {
+      const res = await apiFetch("/notifikasi");
+      const json = res;
+
+      if (json.data) {
+        const { unread, read } = json.data;
+
+        const unreadNotif: NotificationItem[] = unread.map((u: any) => ({
+          notif_id: u.id_notifikasi,
+          title: u.judul,
+          subtitle: u.judul_document ?? "-",
+          time: formatTanggalID(u.updated_at) ?? "-",
+          type: u.tipe_document,
+          id: String(u.id_document ?? ""),
+        }));
+
+        const readNotif: NotificationItem[] = read.map((r: any) => ({
+          title: r.judul,
+          subtitle: r.judul_document ?? "-",
+          time: formatTanggalID(r.updated_at) ?? "-",
+          type: r.tipe_document,
+          id: String(r.id_document ?? ""),
+        }));
+
+        setUnread(unreadNotif);
+        setRead(readNotif);
+      }
+    } catch (err) {
+      Alert.alert("Gagal Memuat Notifikasi");
+      console.log(err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false); // pastikan berhenti refresh
+    }
+  }, []);
+
+  const handleMarkAllAsRead = async (): Promise<void> => {
+    try {
+      await apiFetch("/notifikasi/read-all", { method: "POST" });
+      await fetchNotifData();
+      Alert.alert(
+        "Berhasil",
+        "Semua notifikasi telah ditandai sebagai terbaca."
+      );
+    } catch (e) {
+      console.log("Error", e);
+    }
+  };
+
+  const navigateToNotification = (item: NotificationItem) => {
+    const t = item.type;
+    console.log("id :", item.id, "notif :", item.notif_id);
+    if (t === "memo") {
+      router.push({
+        pathname: "/memo/memo-detail",
+        params: { id: item.id, notif_id: item.notif_id },
+      });
+      return;
+    }
+    if (t === "undangan") {
+      router.push({
+        pathname: "/undangan/undangan-detail",
+        params: { id: item.id, notif_id: item.notif_id },
+      });
+      return;
+    }
+    if (t === "risalah") {
+      router.push({
+        pathname: "/risalah/risalah-detail",
+        params: { id: item.id, notif_id: item.notif_id },
+      });
+      return;
+    }
+
+    // fallback
+    router.push({
+      pathname: "/memo/memo-detail",
+      params: { id: item.id, notif_id: item.notif_id },
+    });
+  };
+
+  useEffect(() => {
+    fetchNotifData();
+  }, [fetchNotifData]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchNotifData();
+  }, [fetchNotifData]);
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: Colors.white,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text
+          style={[
+            Fonts.paragraphMediumLarge,
+            { marginTop: 12, color: Colors.textSecondary },
+          ]}
+        >
+          Memuat notifikasi...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]} // Android
+            tintColor={Colors.primary} // iOS
+            title="Menarik untuk memuat ulang..."
+          />
+        }
+      >
+        {/* Header */}
+        <View
+          style={{
+            paddingHorizontal: 10,
+            paddingTop: 8,
+            paddingBottom: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Pressable
+            onPress={() => router.replace("/beranda/beranda")}
+            hitSlop={10}
+            style={{ padding: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Kembali ke Beranda"
+          >
+            <FontAwesome6
+              name="chevron-left"
+              size={20}
+              color={Colors.textPrimary}
+            />
+          </Pressable>
+
+          <Text style={[Fonts.header3, { color: Colors.textPrimary }]}>
+            Notifikasi
+          </Text>
+        </View>
+
+        {/* Belum terbaca */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 10,
+            paddingVertical: 8,
+          }}
+        >
+          <Text style={[Fonts.header6, { color: Colors.textPrimary }]}>
+            Notifikasi Belum Terbaca
+          </Text>
+
+          <Pressable
+            onPress={handleMarkAllAsRead}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          >
+            <FontAwesome6 name="check-double" size={14} color={Colors.navy} />
+            <Text
+              style={[
+                Fonts.paragraphRegularSmall,
+                { color: Colors.navy, textDecorationLine: "underline" },
+              ]}
+            >
+              Tandai sudah dibaca
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Daftar Belum Terbaca */}
+        {unread.length > 0 ? (
+          unread.map((n, i) => {
+            const safeType = ["memo", "undangan", "risalah"].includes(n.type)
+              ? (n.type as "memo" | "undangan" | "risalah")
+              : ("memo" as "memo" | "undangan" | "risalah");
+
+            return (
+              <Notification
+                key={`u-${i}`}
+                title={n.title}
+                subtitle={n.subtitle}
+                date={n.time}
+                type={safeType}
+                unread
+                onPress={() => navigateToNotification(n)}
+              />
+            );
+          })
+        ) : (
+          <View style={{ paddingHorizontal: 10, paddingBottom: 12 }}>
+            <Text
+              style={[
+                Fonts.paragraphRegularSmall,
+                { color: Colors.textSecondary },
+              ]}
+            >
+              Semua notifikasi telah dibaca
+            </Text>
+          </View>
+        )}
+
+        {/* Terbaca */}
+        <View style={{ paddingHorizontal: 10, paddingVertical: 12 }}>
+          <Text style={[Fonts.header6, { color: Colors.textPrimary }]}>
+            Notifikasi Terbaca
+          </Text>
+        </View>
+
+        {read.length > 0 ? (
+          read.map((n, i) => {
+            const safeType = ["memo", "undangan", "risalah"].includes(n.type)
+              ? (n.type as "memo" | "undangan" | "risalah")
+              : ("memo" as "memo" | "undangan" | "risalah");
+
+            return (
+              <Notification
+                key={`r-${i}`}
+                title={n.title}
+                subtitle={n.subtitle}
+                date={n.time}
+                type={safeType}
+                unread={false}
+                onPress={() => navigateToNotification(n)}
+              />
+            );
+          })
+        ) : (
+          <View style={{ paddingHorizontal: 10, paddingBottom: 12 }}>
+            <Text
+              style={[
+                Fonts.paragraphRegularSmall,
+                { color: Colors.textSecondary },
+              ]}
+            >
+              Belum ada notifikasi terbaca
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

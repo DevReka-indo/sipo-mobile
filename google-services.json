@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "1041746085583",
+    "project_id": "sipo-161b4",
+    "storage_bucket": "sipo-161b4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041746085583:android:42eba7512fa6002eaa59ba",
+        "android_client_info": {
+          "package_name": "com.fajarbudhi17.sipoApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC25dJ8UdmqHeZVzRF6GC2e8av7xNZRpZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041746085583:android:4420bab62abc1a0eaa59ba",
+        "android_client_info": {
+          "package_name": "com.ptrekaindo.sipo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC25dJ8UdmqHeZVzRF6GC2e8av7xNZRpZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041746085583:android:0617f3edd465a8d0aa59ba",
+        "android_client_info": {
+          "package_name": "com.reka.sipoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC25dJ8UdmqHeZVzRF6GC2e8av7xNZRpZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

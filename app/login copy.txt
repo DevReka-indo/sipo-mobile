@@ -26,10 +26,9 @@ function LoginScreenInner() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  // const [email, setEmail] = useState("");
-  const [login, setLogin] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ login?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMsg, setAlertMsg] = useState("");
@@ -52,8 +51,8 @@ function LoginScreenInner() {
     setAlertVisible(true);
   };
 const handleLogin = async () => {
-  if (!login || !password) {
-    showCustomAlert("Email/NIP dan Password harus diisi", "Alert!!!");
+  if (!email || !password) {
+    showCustomAlert("Email dan Password harus diisi", "Alert!!!");
     return;
   }
 
@@ -63,7 +62,7 @@ const handleLogin = async () => {
   try {
     const res = await apiFetch("/login", {
       method: "POST",
-      body: JSON.stringify({ login, password }),
+      body: JSON.stringify({ email, password }),
     });
 
     console.log("Login response:", res);
@@ -79,14 +78,14 @@ const handleLogin = async () => {
       ]);
 
       // 🔹 Step 1: Tampilkan loading sebelum register token
-      setAlertVisible(false);
+      setAlertVisible(false); // pastikan tidak bentrok modal
       showCustomAlert("Menyiapkan notifikasi...", "Mohon Tunggu");
 
       try {
         const expoToken = await registerForPushNotificationsAsync();
 
         if (expoToken) {
-          console.log("Expo Push Token:", expoToken);
+          console.log("✅ Expo Push Token:", expoToken);
           await apiFetch("/notifikasi/token", {
             method: "POST",
             headers: {
@@ -98,11 +97,13 @@ const handleLogin = async () => {
               platform: Platform.OS,
             }),
           });
+          console.log("✅ Notification token sent to server");
         }
       } catch (e) {
-        console.warn("Gagal register notifikasi:", e);
+        console.warn("❌ Gagal register notifikasi:", e);
       }
 
+      // 🔹 Step 2: Delay sedikit biar semua state stabil
       setTimeout(() => {
         showCustomAlert(`Selamat datang, ${user.fullname}`, "Login Berhasil");
         setTimeout(() => {
@@ -110,16 +111,91 @@ const handleLogin = async () => {
         }, 500);
       }, 500);
     } else {
-      showCustomAlert(res.message ?? "Email/NIP atau password salah", "Login Gagal");
+      showCustomAlert(res.message ?? "Email atau password salah", "Login Gagal");
     }
   } catch (err) {
     console.error("Login error:", err);
-    showCustomAlert("Email/NIP atau password salah", "Login Gagal");
+    showCustomAlert("Email atau password salah", "Login Gagal");
   } finally {
     setLoading(false);
   }
 };
 
+
+  // const handleLogin = async () => {
+  //   // simple validation
+  //   if (!email || !password) {
+  //     showCustomAlert("Email dan Password harus diisi", "Error");
+  //     return;
+  //   }
+
+  //   setErrors({});
+  //   setLoading(true);
+
+  //   try {
+  //     // call login endpoint (ensure Content-Type so backend reads JSON)
+  //     const res = await apiFetch("/login", {
+  //       method: "POST",
+  //       // headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email, password }),
+  //     });
+
+  //     console.log("Login response:", res);
+
+  //     if (res.status === "success") {
+  //       const user = res.user;
+  //       const apiToken = res.token;
+
+  //       // store minimal data
+  //       await AsyncStorage.multiSet([
+  //         ["token", apiToken],
+  //         ["user", JSON.stringify(user)],
+  //         ["role", String(user.id_role ?? user.role ?? "")],
+  //       ]);
+
+  //       // Register for push notifications and send token to backend (if available)
+  //       try {
+  //         const expoToken = await registerForPushNotificationsAsync();
+
+  //         if (expoToken) {
+  //           console.log("🔥 expo token:", expoToken);
+
+  //           // Kirim token ke backend
+  //           await apiFetch("/notifikasi/token", {
+  //             method: "POST",
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //               Authorization: `Bearer ${apiToken}`,
+  //             },
+  //             body: JSON.stringify({
+  //               token: expoToken,
+  //               platform: Platform.OS, // ✅ Tambahan opsional (supaya backend tahu iOS/Android)
+  //             }),
+  //           });
+
+  //           console.log("✅ Notification token sent to server");
+  //         } else {
+  //           console.warn("⚠️ Tidak berhasil mendapatkan expo token");
+  //         }
+  //       } catch (err) {
+  //         console.warn("❌ Failed to register/send push token:", err);
+  //       }
+  //       // show success and navigate after a short delay
+  //       showCustomAlert(`Selamat datang, ${user.fullname}`, "Login Berhasil");
+  //       setTimeout(() => {
+  //         router.replace("/beranda/beranda");
+  //       }, 700);
+  //     } else {
+  //       // backend returned failure
+  //       showCustomAlert(res.message ?? "Email atau password salah", "Login Gagal");
+  //     }
+  //   } catch (err: any) {
+  //     console.error("Login error:", err);
+  //     showCustomAlert("Terjadi kesalahan. Coba lagi.", "Error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   function CustomAlert({ visible, onClose, title, message }: any) {
     return (
@@ -231,20 +307,21 @@ const handleLogin = async () => {
           <Text style={[Fonts.header1, { color: Colors.black, marginBottom: 20 }]}>Login</Text>
 
           <TextField
-            label="NIP"
-            placeholder="Masukkan NIP..."
-            value={login}
-            onChangeText={setLogin}
-            helperText={errors.login}
-            status={errors.login ? "error" : "default"}
+            label="Email"
+            placeholder="email..."
+            value={email}
+            onChangeText={setEmail}
+            helperText={errors.email}
+            status={errors.email ? "error" : "default"}
             autoCapitalize="none"
-            keyboardType="default"
+            keyboardType="email-address"
             returnKeyType="next"
             onSubmitEditing={() => passwordRef.current?.focus()}
           />
+
           <PasswordField
             label="Password"
-            placeholder="Masukkan Password..."
+            placeholder="password..."
             value={password}
             onChangeText={setPassword}
             helperText={errors.password}

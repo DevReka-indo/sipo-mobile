@@ -171,8 +171,8 @@ export default function BottomNav() {
 
       fetchStatus();
 
-      // Optional: poll every 30s
-      const interval = setInterval(fetchStatus, 30000);
+      // Optional: poll every 5s
+      const interval = setInterval(fetchStatus, 5000);
 
       return () => {
         isActive = false;

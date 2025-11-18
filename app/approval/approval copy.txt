@@ -1,0 +1,254 @@
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/colors";
+import { Fonts } from "../../constants/fonts";
+import { apiFetch } from "../../utils/api";
+import { formatTanggalID } from "../../utils/date";
+
+type ItemType = "memo" | "undangan" | "risalah";
+
+type ApprovalItem = {
+  type: ItemType;
+  title: string;
+  date: string | Date;
+};
+
+export default function ApprovalIndex() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<ApprovalItem[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch("/approval");
+      const data = res?.data || {};
+
+      const newItems: ApprovalItem[] = [
+        {
+          type: "memo" as ItemType,
+          title: data.memo?.judul || "-",
+          date: data.memo?.updated_at || new Date(),
+        },
+        {
+          type: "undangan" as ItemType,
+          title: data.undangan?.judul || "-",
+          date: data.undangan?.updated_at || new Date(),
+        },
+        {
+          type: "risalah" as ItemType,
+          title: data.risalah?.judul || "-",
+          date: data.risalah?.updated_at || new Date(),
+        },
+      ];
+
+      setItems(newItems);
+    } catch (e) {
+      console.log(e);
+      Alert.alert("Gagal memuat data approval: " + e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    load();
+  }, [load]);
+
+  const go = (type: ItemType) => {
+    router.push({
+      pathname:
+        type === "memo"
+          ? "/memo/memos"
+          : type === "undangan"
+          ? "/undangan/undangan"
+          : "/risalah/risalah",
+      params: { approval: "1" },
+    });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 10, color: Colors.textPrimary }}>
+          Harap tunggu...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Header */}
+        <Text
+          style={[Fonts.header1, { color: Colors.textPrimary, marginTop: 20 }]}
+        >
+          Approval
+        </Text>
+        <Text
+          style={[
+            Fonts.paragraphRegularSmall,
+            { color: Colors.textSecondary, marginBottom: 16 },
+          ]}
+        >
+          Daftar dokumen menunggu persetujuan
+        </Text>
+
+        {/* Daftar dokumen */}
+        {items.map((it) => (
+          <TouchableOpacity
+            key={it.type}
+            style={[styles.card, cardBg(it.type)]}
+            activeOpacity={0.8}
+            onPress={() => go(it.type)}
+          >
+            <View style={[styles.iconBox, cardIconBg(it.type)]}>
+              <Image
+                source={
+                  it.type === "memo"
+                    ? require("../../assets/icons/memo/memo_blue.png")
+                    : it.type === "undangan"
+                    ? require("../../assets/icons/undangan/undangan_purple.png")
+                    : require("../../assets/icons/risalah/risalah_green.png")
+                }
+                style={styles.iconImg}
+                resizeMode="contain"
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  Fonts.paragraphMediumLarge,
+                  { color: Colors.textPrimary, marginBottom: 4 },
+                ]}
+              >
+                {`Persetujuan ${capFirst(it.type)}`}
+              </Text>
+
+              <Text
+                style={[
+                  Fonts.paragraphMediumSmall,
+                  { color: Colors.textSecondary },
+                ]}
+              >
+                {leadLabel(it.type)}{" "}
+                <Text
+                  style={[
+                    Fonts.paragraphRegularSmall,
+                    { color: Colors.textSecondary },
+                  ]}
+                >
+                  {it.title}
+                </Text>
+              </Text>
+
+              <Text
+                style={[
+                  Fonts.paragraphMediumSmall,
+                  { color: Colors.textSecondary },
+                ]}
+              >
+                Hari, Tanggal:{" "}
+                <Text
+                  style={[
+                    Fonts.paragraphRegularSmall,
+                    { color: Colors.textSecondary },
+                  ]}
+                >
+                  {formatTanggalID(it.date)}
+                </Text>
+              </Text>
+            </View>
+
+            <Text
+              style={[
+                Fonts.header3,
+                { color: Colors.textPrimary, marginLeft: 8 },
+              ]}
+            >
+              ›
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+/** helpers */
+const cardBg = (t: ItemType) => {
+  if (t === "memo") return { backgroundColor: Colors.memo_card_bg };
+  if (t === "undangan") return { backgroundColor: Colors.undangan_card_bg };
+  if (t === "risalah") return { backgroundColor: Colors.risalah_card_bg };
+  return { backgroundColor: Colors.white };
+};
+
+const cardIconBg = (t: ItemType) => {
+  if (t === "memo") return { backgroundColor: Colors.memo_card_bg_icon };
+  if (t === "undangan")
+    return { backgroundColor: Colors.undangan_card_bg_icon };
+  if (t === "risalah") return { backgroundColor: Colors.risalah_card_bg_icon };
+  return { backgroundColor: Colors.lightGray };
+};
+
+const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const leadLabel = (t: ItemType) =>
+  t === "memo"
+    ? "Memo Terbaru:"
+    : t === "undangan"
+    ? "Undangan Terbaru:"
+    : "Risalah Terbaru:";
+
+/** layout & spacing only */
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.white },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F7F8FA",
+  },
+  scroll: { paddingHorizontal: 20, paddingBottom: 100 },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+  },
+  iconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+  iconImg: { width: 32, height: 32 },
+});
