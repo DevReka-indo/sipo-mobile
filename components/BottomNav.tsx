@@ -196,7 +196,7 @@ export default function BottomNav() {
               key={item.key}
               item={item}
               isActive={isActive}
-              onPress={() => router.replace(item.href)}
+              onPress={() => router.navigate(item.href)}
               available={available} // ✅ Pass sebagai prop
             />
           );

@@ -2,22 +2,23 @@
   "expo": {
     "name": "SIPO Mobile",
     "slug": "sipoApp",
-    "version": "1.1.9",
+    "version": "1.1.10",
     "orientation": "portrait",
     "icon": "./assets/images/icon-shadow.png",
     "scheme": "sipo-mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.reka.sipoapp",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification",
+          "remote-notification"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -29,15 +30,17 @@
         "POST_NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
+        "WAKE_LOCK",
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
         "WAKE_LOCK"
       ]
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-
     "plugins": [
       "expo-router",
       [
@@ -63,11 +66,9 @@
       ],
       "expo-web-browser"
     ],
-
     "experiments": {
       "typedRoutes": true
     },
-
     "extra": {
       "router": {
         "origin": false
@@ -75,6 +76,12 @@
       "eas": {
         "projectId": "5f4848f3-6bce-4af5-b269-f0021407c68b"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5f4848f3-6bce-4af5-b269-f0021407c68b"
     }
   }
 }

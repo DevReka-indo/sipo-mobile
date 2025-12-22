@@ -5,6 +5,7 @@ import { apiFetch, viewPDF } from "@/utils/api";
 import { formatTanggalID } from "@/utils/date";
 import { FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigationState } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -93,6 +94,7 @@ export default function MemoDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const state = useNavigationState((state) => state);
 
   useEffect(() => {
     AsyncStorage.getItem("role").then((r) => setRole(r));
@@ -111,7 +113,12 @@ export default function MemoDetail() {
         // ⬇️ Ganti endpoint untuk MEMO
         const raw = await apiFetch(`/memos/${id}`);
         const data = raw?.data ?? raw;
-        //console.log(data);
+        console.log(
+          "STACK:",
+          state.routes.map((r) => r.name)
+        );
+
+        console.log(data);
         setDetail(data);
       } catch (error) {
         Alert.alert("Error", "Gagal memuat detail memo: " + error);

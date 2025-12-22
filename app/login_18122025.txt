@@ -12,7 +12,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import {
   SafeAreaProvider,
@@ -200,18 +200,11 @@ function LoginScreenInner() {
           ? "height"
           : undefined
       }
-      // keyboardVerticalOffset={
-      //   Platform.OS === "ios"
-      //   ? insets.top : 0
-      // }
-      // keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-    <ScrollView
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ 
-          flexGrow: 1,
-          paddingBottom: 0,
-      }}
       >
         {loading && (
           <View
@@ -273,8 +266,8 @@ function LoginScreenInner() {
             borderTopRightRadius: 30,
             paddingHorizontal: 24,
             paddingVertical: 25,
-            // paddingBottom: insets.bottom,
-            // transform: [{ translateY: slideAnim }],
+            paddingBottom: insets.bottom,
+            transform: [{ translateY: slideAnim }],
           }}
         >
           <Text

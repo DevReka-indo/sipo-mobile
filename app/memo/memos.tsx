@@ -161,7 +161,7 @@ export default function MemoScreen() {
       <View style={stylesIndex.header}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Pressable
-            onPress={() => router.replace("/beranda/beranda")}
+            onPress={() => router.push("/beranda/beranda")}
             hitSlop={10}
             style={{ padding: 8 }}
             accessibilityRole="button"

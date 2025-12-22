@@ -11,7 +11,6 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 
 import Button from "@/components/button";
-import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfilScreen() {
@@ -19,12 +18,8 @@ export default function ProfilScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const version = Constants.expoConfig?.version ?? "1.0.0";
-  const navigation = useNavigation();
+
   const handleLogout = async () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "/login" }],
-    });
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
     router.replace("/login");
@@ -73,9 +68,9 @@ export default function ProfilScreen() {
   if (!user) return null;
 
   return (
-    <SafeAreaView
+    <SafeAreaView 
       style={{ flex: 1, backgroundColor: "#E8F1FF" }}
-      edges={["top", "left", "right"]}
+      edges={['top', 'left', 'right']}
     >
       {/* 🔥 STATUS BAR opsi : (dark, light, auto) - Ubah jadi dark (text hitam) untuk background cerah */}
       <StatusBar style="dark" />

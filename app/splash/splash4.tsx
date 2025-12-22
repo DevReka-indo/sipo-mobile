@@ -136,10 +136,10 @@ export default function Splash4({ active }: { active?: boolean }) {
 
       {/* Gambar Roket */}
       <Animated.Image
-        source={require("../../assets/images/rocket.png")}
+        source={require("../../assets/images/mail-group.png")}
         style={{
-          width: 260,
-          height: 260,
+          width: 270,
+          height: 270,
           marginBottom: 40,
           opacity: rocketOpacity,
           transform: [{ translateY: rocketTranslateY }],

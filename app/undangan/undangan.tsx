@@ -50,16 +50,18 @@ const statusConfig: Record<
 export default function UndanganScreen() {
   const router = useRouter();
   const { approval } = useLocalSearchParams<{ approval?: string }>();
-  
+
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  
+
   // Filter states
   const [status, setStatus] = useState<string | null>(null);
   const [divisi, setDivisi] = useState<string | null>(null);
-  const [openDropdown, setOpenDropdown] = useState<"status" | "divisi" | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<"status" | "divisi" | null>(
+    null
+  );
   const [divisiOptions, setDivisiOptions] = useState<
     { label: string; value: string }[]
   >([]);
@@ -168,7 +170,10 @@ export default function UndanganScreen() {
 
   return (
     <SafeAreaView
-      style={[stylesIndex.container, { flex: 1, backgroundColor: Colors.white }]}
+      style={[
+        stylesIndex.container,
+        { flex: 1, backgroundColor: Colors.white },
+      ]}
       edges={["top", "bottom"]}
     >
       {/* Header */}
@@ -370,7 +375,9 @@ export default function UndanganScreen() {
                 style={styles.clearFilterBtn}
                 onPress={handleReset}
               >
-                <Text style={[Fonts.paragraphMediumSmall, styles.clearFilterText]}>
+                <Text
+                  style={[Fonts.paragraphMediumSmall, styles.clearFilterText]}
+                >
                   Hapus Filter
                 </Text>
               </TouchableOpacity>
@@ -416,10 +423,7 @@ export default function UndanganScreen() {
                   </Text>
                   <View style={styles.timeWrapper}>
                     <Text
-                      style={[
-                        styles.infoValue,
-                        Fonts.paragraphRegularSmall,
-                      ]}
+                      style={[styles.infoValue, Fonts.paragraphRegularSmall]}
                     >
                       {item.waktu_mulai || "Mulai"}
                     </Text>
@@ -433,10 +437,7 @@ export default function UndanganScreen() {
                       -
                     </Text>
                     <Text
-                      style={[
-                        styles.infoValue,
-                        Fonts.paragraphRegularSmall,
-                      ]}
+                      style={[styles.infoValue, Fonts.paragraphRegularSmall]}
                     >
                       {item.waktu_selesai || "Selesai"}
                     </Text>
