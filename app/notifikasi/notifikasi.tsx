@@ -445,11 +445,31 @@ export default function NotifikasiScreen() {
     }
   };
 
-  const navigateTo = (item: NotificationItem) => {
+  const navigateTo = async (item: NotificationItem) => {
     const pathname = documentRoutes[normalizeType(item.type)];
+
+    if (!item.dibaca && item.notif_id) {
+      try {
+        await apiFetch(`/notifikasi/${item.notif_id}/read`, {
+          method: "POST",
+        });
+
+        setUnread((prev) => prev.filter((n) => n.notif_id !== item.notif_id));
+        setRead((prev) => [{ ...item, dibaca: true }, ...prev]);
+        setUnreadCount((prev) => Math.max(prev - 1, 0));
+        setReadCount((prev) => prev + 1);
+      } catch (error) {
+        console.log("Gagal menandai notifikasi sebagai dibaca:", error);
+      }
+    }
+
     router.push({
       pathname: pathname as any,
-      params: { id: item.id, notif_id: item.notif_id, label: item.label },
+      params: {
+        id: item.id,
+        notif_id: item.notif_id,
+        label: item.label,
+      },
     });
   };
 
