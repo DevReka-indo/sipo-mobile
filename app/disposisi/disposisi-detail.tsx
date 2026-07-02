@@ -161,6 +161,8 @@ interface DisposisiItem {
   updated_at?: string | null;
   dari_user?: UserLite | null;
   dariUser?: UserLite | null;
+  kepada_users?: UserLite[] | null;
+  kepadaUsers?: UserLite[] | null;
   parent?: DisposisiItem | null;
   all_children?: DisposisiItem[] | null;
   allChildren?: DisposisiItem[] | null;
@@ -217,6 +219,23 @@ function getUserName(user?: UserLite | null) {
 
 function getSenderName(item?: DisposisiItem | null) {
   return getUserName(item?.dari_user ?? item?.dariUser);
+}
+
+function getRecipientUsers(item?: DisposisiItem | null): UserLite[] {
+  const raw = item?.kepada_users ?? item?.kepadaUsers ?? [];
+
+  return Array.isArray(raw) ? raw : [];
+}
+
+function getRecipientNames(item?: DisposisiItem | null) {
+  const users = getRecipientUsers(item);
+
+  if (users.length === 0) return "-";
+
+  return users
+    .map((user) => getUserName(user))
+    .filter((name) => name && name !== "-")
+    .join(", ");
 }
 
 function getTitle(d?: DisposisiItem | null, dok?: DokumenInfo | null) {
@@ -971,12 +990,21 @@ export default function DisposisiDetailScreen() {
                   value={getSenderName(disposisi)}
                   C={C}
                 />
+
+                <MetaRow
+                  icon="users"
+                  label="Kepada"
+                  value={getRecipientNames(disposisi)}
+                  C={C}
+                />
+
                 <MetaRow
                   icon="calendar-days"
                   label="Diperbarui"
                   value={getDate(disposisi.updated_at ?? disposisi.created_at)}
                   C={C}
                 />
+
                 {!!disposisi.deadline && (
                   <MetaRow
                     icon="hourglass-half"
@@ -988,6 +1016,66 @@ export default function DisposisiDetailScreen() {
               </View>
             </View>
           </View>
+
+          {/* ── PENERIMA DISPOSISI ────────────────────────────────────────── */}
+          <Panel C={C}>
+            <PanelHeader
+              icon="users"
+              iconBg={C.greenBg}
+              iconBd={C.greenBd}
+              iconColor={C.green}
+              title="Penerima Disposisi"
+              sub="Daftar user yang menerima disposisi"
+              C={C}
+            />
+
+            <View style={[s.panelDivider, { backgroundColor: C.border }]} />
+
+            {getRecipientUsers(disposisi).length > 0 ? (
+              <View style={s.recipientList}>
+                {getRecipientUsers(disposisi).map((user, index) => (
+                  <View
+                    key={`recipient-${user.id}-${index}`}
+                    style={[
+                      s.recipientItem,
+                      {
+                        backgroundColor: C.surface2,
+                        borderColor: C.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.recipientAvatar,
+                        {
+                          backgroundColor: C.greenBg,
+                          borderColor: C.greenBd,
+                        },
+                      ]}
+                    >
+                      <FontAwesome6 name="user" size={11} color={C.green} />
+                    </View>
+
+                    <View style={s.recipientTextWrap}>
+                      <Text
+                        style={[s.recipientName, { color: C.textPrimary }]}
+                        numberOfLines={1}
+                      >
+                        {getUserName(user)}
+                      </Text>
+                      <Text style={[s.recipientSub, { color: C.textTertiary }]}>
+                        Penerima disposisi
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={[s.mutedText, { color: C.textTertiary }]}>
+                Belum ada data penerima disposisi.
+              </Text>
+            )}
+          </Panel>
 
           {/* ── INSTRUKSI & CATATAN ───────────────────────────────────────── */}
           <Panel C={C}>
@@ -1354,6 +1442,42 @@ const s = StyleSheet.create({
   },
   lihatDokumenText: { fontSize: 12, fontWeight: "700" },
   mutedText: { fontSize: 12.5, lineHeight: 19, fontWeight: "500" },
+
+  recipientList: {
+    gap: 8,
+  },
+  recipientItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 13,
+    borderWidth: 0.5,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+  },
+  recipientAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  recipientTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recipientName: {
+    fontSize: 12.5,
+    fontWeight: "800",
+    letterSpacing: -0.1,
+  },
+  recipientSub: {
+    fontSize: 10.5,
+    fontWeight: "500",
+    marginTop: 2,
+  },
 
   // Action grid
   actionGrid: { flexDirection: "row", gap: 8 },

@@ -1,4 +1,7 @@
 // app/risalah/detail.tsx
+import ApprovalActionModal, {
+  ApprovalStatus,
+} from "@/components/ApprovalActionModal";
 import CustomAlert from "@/components/CustomAlert";
 import { useTheme } from "@/context/ThemeContext";
 import { apiFetch, viewPDF } from "@/utils/api";
@@ -9,14 +12,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Platform,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -209,6 +209,7 @@ export default function RisalahDetail() {
     detail?.kode_risalah,
   );
   const tanggalRapat = getValue(
+    detail?.tgl_dibuat,
     detail?.tgl_rapat,
     detail?.tanggal,
     detail?.date,
@@ -540,124 +541,21 @@ export default function RisalahDetail() {
         </View>
       )}
 
-      <Modal
+      <ApprovalActionModal
         visible={showApprove}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setShowApprove(false)}
-      >
-        <Pressable
-          style={s.modalBackdrop}
-          onPress={() => setShowApprove(false)}
-        >
-          <Pressable
-            style={s.approvalSheet}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={s.modalHandle} />
-
-            <View style={s.approvalHeader}>
-              <View style={s.approvalIcon}>
-                <FontAwesome6 name="shield-halved" size={14} color={C.accent} />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={s.approvalTitle}>Persetujuan Risalah</Text>
-                <Text style={s.approvalSub}>
-                  Pilih keputusan persetujuan risalah.
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={s.approvalClose}
-                onPress={() => setShowApprove(false)}
-              >
-                <FontAwesome6 name="xmark" size={14} color={C.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={s.modalLabel}>Status Keputusan</Text>
-
-            <View style={s.statusGrid}>
-              {(["approve", "reject", "correction"] as Status[]).map(
-                (value) => {
-                  const cfg = STATUS_CONFIG[value];
-                  const active = selectedStatus === value;
-
-                  return (
-                    <TouchableOpacity
-                      key={value}
-                      activeOpacity={0.82}
-                      onPress={() => setSelectedStatus(value)}
-                      style={[
-                        s.statusOption,
-                        {
-                          backgroundColor: active ? cfg.bg : C.surface2,
-                          borderColor: active ? cfg.border : C.borderStrong,
-                        },
-                      ]}
-                    >
-                      <FontAwesome6
-                        name={cfg.icon as any}
-                        size={13}
-                        color={active ? cfg.color : C.textTertiary}
-                      />
-                      <Text
-                        style={[
-                          s.statusOptionText,
-                          { color: active ? cfg.color : C.textSecondary },
-                        ]}
-                      >
-                        {cfg.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                },
-              )}
-            </View>
-
-            {isNoteRequired && (
-              <>
-                <Text style={s.modalLabel}>Catatan *</Text>
-                <TextInput
-                  placeholder="Catatan wajib diisi untuk keputusan ini..."
-                  placeholderTextColor={C.textTertiary}
-                  value={catatan}
-                  onChangeText={setCatatan}
-                  multiline
-                  style={s.noteInput}
-                />
-              </>
-            )}
-
-            <View style={s.modalActions}>
-              <TouchableOpacity
-                style={s.cancelBtn}
-                onPress={() => setShowApprove(false)}
-              >
-                <Text style={s.cancelText}>Batal</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[
-                  s.saveBtn,
-                  (isSaveDisabled || submitting) && s.disabled,
-                ]}
-                disabled={isSaveDisabled || submitting}
-                onPress={submitApproval}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={s.saveText}>Simpan</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Persetujuan Risalah"
+        subtitle="Pilih keputusan persetujuan risalah."
+        selectedStatus={selectedStatus as ApprovalStatus | null}
+        catatan={catatan}
+        isNoteRequired={isNoteRequired}
+        isSaveDisabled={isSaveDisabled}
+        submitting={submitting}
+        C={C}
+        onClose={() => setShowApprove(false)}
+        onSelectStatus={setSelectedStatus}
+        onChangeCatatan={setCatatan}
+        onSubmit={submitApproval}
+      />
     </SafeAreaView>
   );
 }
@@ -1080,137 +978,6 @@ function createStyles(C: ThemeColors, isDark: boolean) {
     },
     approveFloatingText: {
       fontSize: 14,
-      fontWeight: "900",
-      color: "#FFFFFF",
-    },
-    modalBackdrop: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: C.backdrop,
-    },
-    approvalSheet: {
-      backgroundColor: C.surface,
-      borderTopLeftRadius: 26,
-      borderTopRightRadius: 26,
-      padding: 20,
-      paddingBottom: 26,
-    },
-    modalHandle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 999,
-      backgroundColor: C.handle,
-      marginBottom: 16,
-    },
-    approvalHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 16,
-    },
-    approvalIcon: {
-      width: 34,
-      height: 34,
-      borderRadius: 12,
-      backgroundColor: C.accentBg,
-      borderWidth: 1,
-      borderColor: C.accentBorder,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    approvalTitle: {
-      fontSize: 16,
-      fontWeight: "900",
-      color: C.textPrimary,
-    },
-    approvalSub: {
-      marginTop: 2,
-      fontSize: 12,
-      fontWeight: "600",
-      color: C.textMuted,
-    },
-    approvalClose: {
-      width: 32,
-      height: 32,
-      borderRadius: 11,
-      backgroundColor: C.surface2,
-      borderWidth: 1,
-      borderColor: C.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    modalLabel: {
-      fontSize: 10,
-      fontWeight: "900",
-      letterSpacing: 1.1,
-      color: C.textTertiary,
-      textTransform: "uppercase",
-      marginBottom: 9,
-    },
-    statusGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-      marginBottom: 14,
-    },
-    statusOption: {
-      flexGrow: 1,
-      minWidth: "31%",
-      minHeight: 44,
-      borderRadius: 15,
-      borderWidth: 1,
-      paddingHorizontal: 10,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 7,
-    },
-    statusOptionText: {
-      fontSize: 12,
-      fontWeight: "900",
-    },
-    noteInput: {
-      minHeight: 94,
-      borderRadius: 16,
-      backgroundColor: C.surface2,
-      borderWidth: 1,
-      borderColor: C.borderStrong,
-      padding: 13,
-      textAlignVertical: "top",
-      fontSize: 13,
-      fontWeight: "600",
-      color: C.textPrimary,
-    },
-    modalActions: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 14,
-    },
-    cancelBtn: {
-      flex: 1,
-      minHeight: 46,
-      borderRadius: 15,
-      borderWidth: 1,
-      borderColor: C.borderStrong,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    cancelText: {
-      fontSize: 13,
-      fontWeight: "900",
-      color: C.textMuted,
-    },
-    saveBtn: {
-      flex: 2,
-      minHeight: 46,
-      borderRadius: 15,
-      backgroundColor: C.accent,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    saveText: {
-      fontSize: 13,
       fontWeight: "900",
       color: "#FFFFFF",
     },

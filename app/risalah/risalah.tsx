@@ -38,6 +38,7 @@ interface RisalahItem {
   kode_bagian?: string;
   nama_bagian?: string;
   nama_pembuat?: string;
+  nama_notulis_acara?: string;
   tujuan_string?: string[] | string;
   pemimpin_acara?: string;
   notulis_acara?: string;
@@ -155,6 +156,19 @@ const getRisalahBagian = (item: RisalahItem) => {
 
   if (kode && nama) return `${kode} - ${nama}`;
   return kode || nama || "-";
+};
+
+const getRisalahPembuat = (item: any) => {
+  const pembuat =
+    item?.nama_notulis_acara ||
+    item?.nama_pembuat ||
+    item?.notulis_acara?.nama ||
+    item?.notulis_acara?.name ||
+    item?.notulis_acara ||
+    item?.notulis ||
+    "-";
+
+  return String(pembuat).trim() || "-";
 };
 
 const getTujuanText = (tujuan?: string[] | string) => {
@@ -678,7 +692,7 @@ export default function RisalahScreen() {
                       ["Kode Bagian", getRisalahKode(item)],
                       ["Bagian", getRisalahBagian(item)],
                       ["Tujuan", getTujuanText(item.tujuan_string)],
-                      ["Pembuat", item.nama_pembuat || "-"],
+                      ["Pembuat", getRisalahPembuat(item)],
                     ].map(([label, value]) => (
                       <View style={styles.risalahMetaRow} key={label}>
                         <Text

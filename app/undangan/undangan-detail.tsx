@@ -1,3 +1,6 @@
+import ApprovalActionModal, {
+  ApprovalStatus,
+} from "@/components/ApprovalActionModal";
 import CustomAlert from "@/components/CustomAlert";
 import DisposisiModal, { DisposisiTheme } from "@/components/DisposisiModal";
 import { useTheme } from "@/context/ThemeContext";
@@ -11,14 +14,11 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Modal,
   Platform,
-  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -35,7 +35,7 @@ type Status = "pending" | "correction" | "approve" | "reject";
 type KandidatItem = { id: number | string; nama: string };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Design tokens — identik dengan memo-detail agar konsisten
+// Design tokens
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LIGHT = {
@@ -120,7 +120,6 @@ type ThemeColors = typeof LIGHT;
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Pola identik memo-detail: border disertakan agar badge konsisten
 const getStatusConfig = (
   C: ThemeColors,
 ): Record<
@@ -192,7 +191,7 @@ const getDisposisiStatusConfig = (
 const TABBAR_HEIGHT = Platform.select({ ios: 49, android: 56, default: 56 })!;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers — identik dengan memo-detail
+// Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function normalizeStatus(raw: any): Status {
@@ -237,6 +236,9 @@ function getUserName(user: any) {
   if (typeof user === "string") return user;
 
   return (
+    user.nama_pembuat ??
+    user.firstname ??
+    user.lastname ??
     user.nama ??
     user.name ??
     user.fullname ??
@@ -329,7 +331,6 @@ export default function UndanganDetail() {
     return detail?.id_undangan ?? detail?.id ?? undanganId;
   }, [detail, undanganId]);
 
-  // Normalisasi status — pola identik memo-detail
   const statusNow = normalizeStatus(
     detail?.status ??
       detail?.status_approval ??
@@ -352,6 +353,7 @@ export default function UndanganDetail() {
     detail?.kode_surat,
   );
   const tanggalUndangan = getValue(
+    detail?.tgl_rapat,
     detail?.tanggal,
     detail?.tgl_undangan,
     detail?.date,
@@ -361,16 +363,15 @@ export default function UndanganDetail() {
   const waktuSelesai = getValue(detail?.waktu_selesai, detail?.jam_selesai);
   const tempat = getValue(detail?.tempat, detail?.lokasi, detail?.ruangan);
   const pengirim = getUserName(
-    detail?.pengirim ??
+    detail?.nama_pembuat ??
+      detail?.pembuat ??
+      detail?.pengirim ??
       detail?.created_by ??
       detail?.user ??
-      detail?.pembuat ??
       detail?.dari,
   );
-  // Prioritaskan tujuan_string (nama lengkap) sebelum tujuan (ID).
-  // Pola identik tujuanList di memo-detail dengan fallback bertingkat.
+
   const penerimaList = useMemo(() => {
-    // tujuan_string → nama-nama siap pakai, prioritas utama
     if (
       Array.isArray(detail?.tujuan_string) &&
       detail.tujuan_string.length > 0
@@ -378,7 +379,6 @@ export default function UndanganDetail() {
       return detail.tujuan_string.map((item: any) => String(item));
     }
 
-    // Kandidat lain: penerima, kepada, tujuan (bisa berisi object atau string)
     const candidates = [
       detail?.penerima,
       detail?.kepada,
@@ -418,7 +418,6 @@ export default function UndanganDetail() {
     String(managerUserId ?? "") !== "-" &&
     String(userId ?? "") === String(managerUserId ?? "");
 
-  // FIX: Guard disable tombol Simpan — identik memo-detail
   const isNoteRequired =
     selectedStatus === "reject" || selectedStatus === "correction";
   const isSaveDisabled = !selectedStatus || (isNoteRequired && !catatan.trim());
@@ -695,11 +694,6 @@ export default function UndanganDetail() {
     }
   }
 
-  // FIX: submitApproval sekarang:
-  // 1. Pakai endpoint undangan yang benar (/undangans/:id/approval)
-  // 2. Update detail secara optimistis seperti memo (tidak re-fetch seluruh halaman)
-  // 3. Hanya kirim catatan jika diperlukan (reject/correction)
-  // 4. Tampilkan CustomAlert setelah berhasil — konsisten dengan memo
   async function submitApproval() {
     if (isSaveDisabled) return;
 
@@ -714,7 +708,6 @@ export default function UndanganDetail() {
         }),
       });
 
-      // Update status secara optimistis tanpa re-fetch
       setDetail((prev: any) => ({ ...prev, status: selectedStatus }));
       setShowApprove(false);
       setSelectedStatus(null);
@@ -758,7 +751,6 @@ export default function UndanganDetail() {
         backgroundColor={C.bg}
       />
 
-      {/* FIX: Pakai CustomAlert — konsisten dengan memo-detail */}
       <CustomAlert
         visible={showAlert}
         onClose={() => setShowAlert(false)}
@@ -794,7 +786,6 @@ export default function UndanganDetail() {
       >
         {/* Hero card */}
         <View style={s.heroCard}>
-          {/* FIX: cardTopLine dekoratif — identik memo */}
           <View style={s.cardTopLine} />
 
           <View style={s.heroTop}>
@@ -802,7 +793,6 @@ export default function UndanganDetail() {
               <FontAwesome6 name="calendar-check" size={21} color={C.accent} />
             </View>
 
-            {/* FIX: Badge sekarang punya borderColor — konsisten memo */}
             <View
               style={[
                 s.statusBadge,
@@ -979,7 +969,6 @@ export default function UndanganDetail() {
                 const cfg = getDisposisiStatus(item.status, C);
 
                 return (
-                  // FIX: Item disposisi sekarang bisa di-tap untuk navigasi ke detail
                   <TouchableOpacity
                     key={String(item.id ?? index)}
                     activeOpacity={0.82}
@@ -1009,7 +998,6 @@ export default function UndanganDetail() {
                         </Text>
                       </View>
 
-                      {/* FIX: Badge disposisi sekarang punya borderColor */}
                       <View
                         style={[
                           s.disposisiStatus,
@@ -1059,12 +1047,6 @@ export default function UndanganDetail() {
         </View>
       </ScrollView>
 
-      {/*
-        FIX: Tombol approval sekarang floating bottom bar — identik memo-detail.
-        Sebelumnya tombol ada di dalam ScrollView (sectionCard), sehingga tidak
-        mengikuti pola memo dan tidak terlihat jelas saat scroll.
-        canApprove true jika status pending dan user login sama dengan manager_user_id.
-      */}
       {canApprove && (
         <View style={[s.bottomBar, { bottom: bottomOffset }]}>
           <TouchableOpacity
@@ -1088,140 +1070,28 @@ export default function UndanganDetail() {
         C={DISPOSISI_THEME}
       />
 
-      {/*
-        FIX: Modal approval sekarang mengikuti struktur memo-detail:
-        - Ada header dengan icon, judul, subjudul, dan tombol tutup (X)
-        - Hanya tampilkan 3 opsi status relevan: approve, reject, correction
-          (bukan 4 termasuk pending — pending bukan pilihan aktif user)
-        - Catatan hanya tampil + wajib diisi jika status reject atau correction
-        - Tombol Simpan di-disable jika isSaveDisabled (guard ketat)
-      */}
-      <Modal
+      {/* ── ApprovalActionModal ────────────────────────────────────────────── */}
+      <ApprovalActionModal
         visible={showApprove}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setShowApprove(false)}
-      >
-        <Pressable
-          style={s.modalBackdrop}
-          onPress={() => setShowApprove(false)}
-        >
-          <Pressable
-            style={s.approvalSheet}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={s.modalHandle} />
-
-            <View style={s.approvalHeader}>
-              <View style={s.approvalIcon}>
-                <FontAwesome6 name="shield-halved" size={14} color={C.accent} />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={s.approvalTitle}>Persetujuan Undangan</Text>
-                <Text style={s.approvalSub}>
-                  Pilih keputusan persetujuan undangan.
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={s.approvalClose}
-                onPress={() => setShowApprove(false)}
-              >
-                <FontAwesome6 name="xmark" size={14} color={C.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={s.modalLabel}>Status Keputusan</Text>
-
-            <View style={s.statusGrid}>
-              {(["approve", "reject", "correction"] as Status[]).map(
-                (value) => {
-                  const cfg = STATUS_CONFIG[value];
-                  const active = selectedStatus === value;
-
-                  return (
-                    <TouchableOpacity
-                      key={value}
-                      activeOpacity={0.82}
-                      onPress={() => setSelectedStatus(value)}
-                      style={[
-                        s.statusOption,
-                        {
-                          backgroundColor: active ? cfg.bg : C.surface2,
-                          borderColor: active ? cfg.border : C.borderStrong,
-                        },
-                      ]}
-                    >
-                      <FontAwesome6
-                        name={cfg.icon as any}
-                        size={13}
-                        color={active ? cfg.color : C.textTertiary}
-                      />
-                      <Text
-                        style={[
-                          s.statusOptionText,
-                          { color: active ? cfg.color : C.textSecondary },
-                        ]}
-                      >
-                        {cfg.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                },
-              )}
-            </View>
-
-            {/* FIX: Catatan hanya muncul jika status reject atau correction */}
-            {isNoteRequired && (
-              <>
-                <Text style={s.modalLabel}>Catatan *</Text>
-                <TextInput
-                  placeholder="Catatan wajib diisi untuk keputusan ini..."
-                  placeholderTextColor={C.textTertiary}
-                  value={catatan}
-                  onChangeText={setCatatan}
-                  multiline
-                  style={s.noteInput}
-                />
-              </>
-            )}
-
-            <View style={s.modalActions}>
-              <TouchableOpacity
-                style={s.cancelBtn}
-                onPress={() => setShowApprove(false)}
-              >
-                <Text style={s.cancelText}>Batal</Text>
-              </TouchableOpacity>
-
-              {/* FIX: Tombol Simpan di-disable jika isSaveDisabled */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[
-                  s.saveBtn,
-                  (isSaveDisabled || submitting) && s.disabled,
-                ]}
-                disabled={isSaveDisabled || submitting}
-                onPress={submitApproval}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={s.saveText}>Simpan</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        title="Persetujuan Undangan"
+        subtitle="Pilih keputusan persetujuan undangan."
+        selectedStatus={selectedStatus as ApprovalStatus | null}
+        catatan={catatan}
+        isNoteRequired={isNoteRequired}
+        isSaveDisabled={isSaveDisabled}
+        submitting={submitting}
+        C={C}
+        onClose={() => setShowApprove(false)}
+        onSelectStatus={setSelectedStatus}
+        onChangeCatatan={setCatatan}
+        onSubmit={submitApproval}
+      />
     </SafeAreaView>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-components — identik memo-detail
+// Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
 function SectionHeader({
@@ -1273,7 +1143,7 @@ function InfoRow({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Styles — identik memo-detail dengan alias `s`
+// Styles
 // ─────────────────────────────────────────────────────────────────────────────
 
 function makeStyles(C: ThemeColors, isDark: boolean) {
@@ -1735,137 +1605,6 @@ function makeStyles(C: ThemeColors, isDark: boolean) {
     },
     approveFloatingText: {
       fontSize: 14,
-      fontWeight: "900",
-      color: "#FFFFFF",
-    },
-    modalBackdrop: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: isDark ? "rgba(0,0,0,0.65)" : "rgba(15,30,80,0.45)",
-    },
-    approvalSheet: {
-      backgroundColor: C.surface,
-      borderTopLeftRadius: 26,
-      borderTopRightRadius: 26,
-      padding: 20,
-      paddingBottom: 26,
-    },
-    modalHandle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 999,
-      backgroundColor: C.borderStrong,
-      marginBottom: 16,
-    },
-    approvalHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 16,
-    },
-    approvalIcon: {
-      width: 34,
-      height: 34,
-      borderRadius: 12,
-      backgroundColor: C.accentBg,
-      borderWidth: 1,
-      borderColor: C.accentBorder,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    approvalTitle: {
-      fontSize: 16,
-      fontWeight: "900",
-      color: C.textPrimary,
-    },
-    approvalSub: {
-      marginTop: 2,
-      fontSize: 12,
-      fontWeight: "600",
-      color: C.textMuted,
-    },
-    approvalClose: {
-      width: 32,
-      height: 32,
-      borderRadius: 11,
-      backgroundColor: C.surface2,
-      borderWidth: 1,
-      borderColor: C.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    modalLabel: {
-      fontSize: 10,
-      fontWeight: "900",
-      letterSpacing: 1.1,
-      color: C.textTertiary,
-      textTransform: "uppercase",
-      marginBottom: 9,
-    },
-    statusGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-      marginBottom: 14,
-    },
-    statusOption: {
-      flexGrow: 1,
-      minWidth: "31%",
-      minHeight: 44,
-      borderRadius: 15,
-      borderWidth: 1,
-      paddingHorizontal: 10,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 7,
-    },
-    statusOptionText: {
-      fontSize: 12,
-      fontWeight: "900",
-    },
-    noteInput: {
-      minHeight: 94,
-      borderRadius: 16,
-      backgroundColor: C.surface2,
-      borderWidth: 1,
-      borderColor: C.borderStrong,
-      padding: 13,
-      textAlignVertical: "top",
-      fontSize: 13,
-      fontWeight: "600",
-      color: C.textPrimary,
-    },
-    modalActions: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 14,
-    },
-    cancelBtn: {
-      flex: 1,
-      minHeight: 46,
-      borderRadius: 15,
-      borderWidth: 1,
-      borderColor: C.borderStrong,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    cancelText: {
-      fontSize: 13,
-      fontWeight: "900",
-      color: C.textMuted,
-    },
-    saveBtn: {
-      flex: 2,
-      minHeight: 46,
-      borderRadius: 15,
-      backgroundColor: C.accent,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    saveText: {
-      fontSize: 13,
       fontWeight: "900",
       color: "#FFFFFF",
     },
